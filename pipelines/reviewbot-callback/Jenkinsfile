@@ -33,7 +33,7 @@ pipeline {
                     RETURN_CODE = sh(
                         returnStatus: true,
                         script:
-                        '/home/vagrant/rbwebhook.BuildIsRelevant.py')
+                        '/home/vagrant/rbwebhook/BuildIsRelevant.py')
                     return RETURN_CODE == 0
                 }
             }
