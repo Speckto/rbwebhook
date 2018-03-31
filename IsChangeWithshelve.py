@@ -6,8 +6,7 @@ from P4 import P4,P4Exception    # Import the module
 import os
 
 shelvedChange = False
-#changeNo = os.environ["review_commit_id"]
-changeNo = "6"
+changeNo = os.environ["review_commit_id"]
 
 if changeNo != "" and changeNo.isdigit():
     p4 = P4()

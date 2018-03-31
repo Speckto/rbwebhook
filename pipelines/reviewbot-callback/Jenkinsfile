@@ -1,0 +1,56 @@
+pipeline {
+
+    agent any
+
+    options {
+        buildDiscarder(logRotator(daysToKeepStr: '2', numToKeepStr: '5'))
+    }
+    /*
+     * The reviewbot plugin does not support declarative pipelines, so
+     * we cannot have one of the parameters be a review URL.
+     * This forces us to manually retrieve the patch file and post results.
+     */
+    parameters {
+        string(defaultValue: '',
+               description: '',
+               name: 'REVIEW_URL',
+               trim: false)
+        string(defaultValue: '',
+               description: '',
+               name: 'review_id',
+               trim: false)
+        string(defaultValue: '',
+               description: '',
+               name: 'review_commit_id',
+               trim: false)
+    }
+
+    stages {
+        stage('CheckApplicableAndLaunch') {
+            when {
+                /* TODO: Invoke correct script */
+                expression {
+                    RETURN_CODE = sh(
+                        returnStatus: true,
+                        script:
+                        '/home/vagrant/rbwebhook.BuildIsRelevant.py')
+                    return RETURN_CODE == 0
+                }
+            }
+            steps {
+                echo "Review ${params.review_id} is relevant. Building..."
+                build job: 'MMA-main-reviewbot-build',
+                      wait: false,
+                      parameters: [
+                        string(name: 'REVIEW_URL',
+                               value: "${params.REVIEW_URL}"),
+                        string(name: 'review_id',
+                               value: "${params.review_id}"),
+                        string(name: 'review_commit_id',
+                               value: "${params.review_commit_id}")
+                      ]
+            }
+        }
+    }
+}
+
