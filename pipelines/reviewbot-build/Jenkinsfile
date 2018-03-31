@@ -104,7 +104,7 @@ pipeline {
                 p4unshelve(credential: 'perforce_Neil.Potter',
                     ignoreEmpty: false,
                     resolve: 'am',
-                    shelf: '5555',
+                    shelf: "${review_commit_id}",
                     tidy: false,
                     workspace: manualSpec(
                         charset: 'none',
