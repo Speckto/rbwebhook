@@ -1,0 +1,139 @@
+pipeline {
+
+    agent any
+
+    options {
+        buildDiscarder(logRotator(daysToKeepStr: '2', numToKeepStr: '5'))
+    }
+    /*
+     * The reviewbot plugin does not support declarative pipelines, so
+     * we cannot have one of the parameters be a review URL.
+     * This forces us to manually retrieve the patch file and post results.
+     */
+    parameters {
+        string(defaultValue: '',
+               description: '',
+               name: 'REVIEW_URL',
+               trim: false)
+        string(defaultValue: '',
+               description: '',
+               name: 'review_id',
+               trim: false)
+        string(defaultValue: '',
+               description: '',
+               name: 'review_commit_id',
+               trim: false)
+    }
+
+    stages {
+        stage('FetchPatch') {
+            steps {
+                sh '/home/vagrant/rbwebhook/FetchPatch.py'
+            }
+        }
+
+        stage('FetchSource') {
+            steps {
+                p4sync(charset: 'none',
+                       credential: 'perforce_Neil.Potter',
+                       populate: autoClean(delete: true,
+                           modtime: false,
+                           parallel: [enable: false,
+                                      minbytes: '1024',
+                                      minfiles: '1',
+                                      threads: '4'],
+                           pin: '',
+                           quiet: true,
+                           replace: true,
+                           tidy: false),
+                       source: depotSource('//depot/MMA/main/...'))
+            }
+
+/*            p4sync(charset: 'none',
+                   credentials: 'perforce_Neil.Potter',
+                   populate: [$class: 'AutoCleanImpl',
+                              delete: true,
+                              modtime: false,
+                              pin: '',
+                              quiet: true,
+                              replace: true],
+                   workspace: [$class: 'ManualWorkspaceImpl',
+                               charset: 'none',
+                               name:
+                               'jenkins-${NODE_NAME}-${JOB_NAME}-${EXECUTOR_NUMBER}',
+                               pinHost: false,
+                               spec: [allwrite: false,
+                                      clobber: false,
+                                      compress: false.
+                                      line: 'LOCAL',
+                                      locked: false,
+                                      modtime: false,
+                                      rmdir: false,
+                                      view: '''//depot/MMA/main/...  //jenkins-${NODE_NAME}-${JOB_NAME}-${EXECUTOR_NUMBER}'''
+                                     ]
+                              ]
+                  )*/
+        }
+
+        stage('IfNoShelveApplyPatch') {
+            when {
+                expression {
+                    RETURN_CODE = sh(
+                        returnStatus: true,
+                        script:
+                        '/home/vagrant/rbwebhook/IsChangeWithshelve.py')
+                    return RETURN_CODE == 1
+                }
+            }
+            steps {
+                sh 'patch -p 3 patch.diff'
+            }
+        }
+
+        stage('IfShelveApplyShelve') {
+            when {
+                expression {
+                    RETURN_CODE = sh(
+                        returnStatus: true,
+                        script:
+                        '/home/vagrant/rbwebhook/IsChangeWithshelve.py')
+                    return RETURN_CODE == 0
+                }
+            }
+            steps {
+                p4unshelve(credential: 'perforce_Neil.Potter',
+                    ignoreEmpty: false,
+                    resolve: 'am',
+                    shelf: '5555',
+                    tidy: false,
+                    workspace: manualSpec(
+                        charset: 'none',
+                        name: 'jenkins-${NODE_NAME}-${JOB_NAME}-${EXECUTOR_NUMBER}',
+                        pinHost: false,
+                        spec: clientSpec(allwrite: false,
+                            backup: false,
+                            clobber: true,
+                            compress: false,
+                            line: 'LOCAL',
+                            locked: false,
+                            modtime: false,
+                            rmdir: false,
+                            type: 'WRITABLE',
+                            view: '//depot/MMA/main/... /jenkins-${NODE_NAME}-${JOB_NAME}-${EXECUTOR_NUMBER}/...'
+                        )
+                    )
+                )
+            }
+        }
+
+        stage('Build') {
+            steps {
+                sh '''ls
+                    cd src
+                    ls
+                    make'''
+            }
+        }
+    }
+}
+

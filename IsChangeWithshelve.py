@@ -31,15 +31,22 @@ else:
           "doesn't look like a perforce change number"
     shelvedChange = False
 
+if shelvedChange == True:
+    print "Shelved change - exiting with code 0"
+    exit(0)
+else:
+    print "Shelved change not detected - exiting with code 1"
+    exit(1)
+
 # Write environment properties file. This allows a conditional build step
 # to work out the result of running this script
-outF = open("IsShelveResult.properties", "w")
-if shelvedChange == True:
-    print "review commit id of",changeNo,"is a shelved change"
-    print >>outF,"IS_SHELVED_CHANGE=1"
-else:
-    print "review commit id of",changeNo,"is not a shelved change"
-    print >>outF,"IS_SHELVED_CHANGE=0"
-
-outF.close()
+#outF = open("IsShelveResult.properties", "w")
+#if shelvedChange == True:
+#    print "review commit id of",changeNo,"is a shelved change"
+#    print >>outF,"IS_SHELVED_CHANGE=1"
+#else:
+#    print "review commit id of",changeNo,"is not a shelved change"
+#    print >>outF,"IS_SHELVED_CHANGE=0"
+#
+#outF.close()
 
