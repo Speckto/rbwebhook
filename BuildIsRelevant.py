@@ -25,16 +25,16 @@ for p in reviewRequest.target_people:
 
 # check file paths are in mainline
 for line in open("patch.diff"):
-    if (line.starts_with("--- //depot/MMA/main/") or
-        line.starts_with("+++ //depot/MMA/main/")):
+    if (line.startswith("--- //depot/MMA/main/") or
+        line.startswith("+++ //depot/MMA/main/")):
         print "Review diff contains files for relevant product"
         relevantFiles = True
         break
 
 if relevantFiles == True and reviewForBot == True:
-    print "This review is relevant"
+    print "This review is relevant (exit code=0)"
     exit(0)
 else:
-    print "Review is not relevant"
+    print "Review is not relevant (exit code=1)"
     exit(1)
 
