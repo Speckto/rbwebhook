@@ -45,7 +45,7 @@ pipeline {
             }
             steps {
                 echo "Review ${params.review_id} is relevant. Building..."
-                build job: 'MMA-main-reviewbot-build',
+                build job: 'MMA-main-reviewbot-build-pipeline',
                       wait: false,
                       parameters: [
                         string(name: 'REVIEW_URL',
