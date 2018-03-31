@@ -128,9 +128,9 @@ pipeline {
 
         stage('Build') {
             steps {
-                sh '''ls
+                sh '''ls -la
                     cd src
-                    ls
+                    ls -la
                     make'''
             }
         }
