@@ -26,6 +26,12 @@ pipeline {
     }
 
     stages {
+        stage('FetchPatch') {
+            steps {
+                sh '/home/vagrant/rbwebhook/FetchPatch.py'
+            }
+        }
+
         stage('CheckApplicableAndLaunch') {
             when {
                 /* TODO: Invoke correct script */
