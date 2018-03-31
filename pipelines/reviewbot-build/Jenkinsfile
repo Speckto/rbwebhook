@@ -69,7 +69,7 @@ pipeline {
                                       locked: false,
                                       modtime: false,
                                       rmdir: false,
-                                      view: '''//depot/MMA/main/...  //jenkins-${NODE_NAME}-${JOB_NAME}-${EXECUTOR_NUMBER}'''
+                                      view: '''//depot/MMA/main/... //jenkins-${NODE_NAME}-${JOB_NAME}-${EXECUTOR_NUMBER}/...'''
                                      ]
                               ]
                   )*/
@@ -119,7 +119,7 @@ pipeline {
                             modtime: false,
                             rmdir: false,
                             type: 'WRITABLE',
-                            view: '//depot/MMA/main/... /jenkins-${NODE_NAME}-${JOB_NAME}-${EXECUTOR_NUMBER}/...'
+                            view: '//depot/MMA/main/... //jenkins-${NODE_NAME}-${JOB_NAME}-${EXECUTOR_NUMBER}/...'
                         )
                     )
                 )
