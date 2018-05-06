@@ -1,11 +1,8 @@
 #!/usr/bin/python
-# Posts a review to the review url indicating if the build passed or failed
 #
-# Inputs
-# review_id Environment variable indicating reviewboard review number
-# BUILD_URL The full URL to this build.
+# Posts a review to the review with specified id indicating if the build
+# passed or failed
 #
-import os
 from rbtools.api.client import RBClient
 import argparse
 
@@ -39,5 +36,6 @@ else:
 reviews.create(body_bottom=msg,
                public=True);
 
-print "Posted to review "+reviewId+" build state="+buildState+". Build url="+buildUrl
+print "Posted to review "+reviewId+" build state="+buildState+\
+       ". Build url="+buildUrl
 

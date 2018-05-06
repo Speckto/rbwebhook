@@ -30,7 +30,7 @@ pipeline {
     stages {
         stage('FetchPatch') {
             steps {
-                sh '/home/vagrant/rbwebhook/FetchPatch.py'
+                sh "/home/vagrant/rbwebhook/FetchPatch.py --reviewid $review_id"
             }
         }
 
@@ -83,7 +83,8 @@ pipeline {
                     RETURN_CODE = sh(
                         returnStatus: true,
                         script:
-                        '/home/vagrant/rbwebhook/IsChangeWithshelve.py')
+                        "/home/vagrant/rbwebhook/IsChangeWithshelve.py \
+                         --reviewcommitid $review_commit_id")
                     return RETURN_CODE == 1
                 }
             }
@@ -98,7 +99,8 @@ pipeline {
                     RETURN_CODE = sh(
                         returnStatus: true,
                         script:
-                        '/home/vagrant/rbwebhook/IsChangeWithshelve.py')
+                        "/home/vagrant/rbwebhook/IsChangeWithshelve.py\
+                         --reviewcommitid $review_commit_id")
                     return RETURN_CODE == 0
                 }
             }

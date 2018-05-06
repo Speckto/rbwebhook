@@ -28,7 +28,7 @@ pipeline {
     stages {
         stage('FetchPatch') {
             steps {
-                sh '/home/vagrant/rbwebhook/FetchPatch.py'
+                sh "/home/vagrant/rbwebhook/FetchPatch.py --reviewid $review_id"
             }
         }
 
@@ -39,7 +39,8 @@ pipeline {
                     RETURN_CODE = sh(
                         returnStatus: true,
                         script:
-                        '/home/vagrant/rbwebhook/BuildIsRelevant.py')
+                        "/home/vagrant/rbwebhook/BuildIsRelevant.py\
+                         --reviewid $review_id")
                     return RETURN_CODE == 0
                 }
             }

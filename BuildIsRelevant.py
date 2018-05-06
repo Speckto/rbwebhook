@@ -1,13 +1,15 @@
 #!/usr/bin/python
-# Determines if the review given by environment variable "review_id"
+#
+# Determines if the review given the review id provided by parameter
 # is relevant to the reviewbot.
-# It is expected that this environment variable is the parameter to the
-# jenkins job which contains the id (not url) of the review
 
-import os
 from rbtools.api.client import RBClient
+import argparse
 
-reviewId = os.environ["review_id"]
+parser = argparse.ArgumentParser()
+parser.add_argument("--reviewid", required=True, help="review id to post to")
+args = parser.parse_args()
+reviewId = args.reviewid
 
 client = RBClient('http://127.0.0.1/',
                   username='Jenkins.Reviewbot',password='useruserrb')

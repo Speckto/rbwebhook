@@ -1,14 +1,15 @@
 #!/usr/bin/python
-# Fetches the latest patch diff from the review given in the encironment
-# variable "review_id"
 #
-# It is expected that this environment variable is awithe parameter to the
-# Jenkins job containing the id (not url) of the review
+# Fetches the latest patch diff from the review given the review id passed
+# as a parameter.
 #
-import os
 from rbtools.api.client import RBClient
+import argparse
 
-reviewId = os.environ["review_id"]
+parser = argparse.ArgumentParser()
+parser.add_argument("--reviewid", required=True, help="review id to post to")
+args = parser.parse_args()
+reviewId = args.reviewid
 
 client = RBClient('http://127.0.0.1/',
                  username='Jenkins.Reviewbot',password='useruserrb')
