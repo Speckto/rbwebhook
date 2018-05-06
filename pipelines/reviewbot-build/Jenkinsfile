@@ -138,11 +138,14 @@ pipeline {
         }
 
         stage('PostBuildResults') {
+            /* Note the use of double quotes below - a templated command
+             * which has variable substitution applied
+             */
             steps {
-                sh '/home/vagrant/rbwebhook/PostBuildResults.py \
-                        --reviewid ${review_id} \
-                        --buildurl ${BUILD_URL} \
-                        --buildstate ${currentBuild.currentResult}'
+                sh "/home/vagrant/rbwebhook/PostBuildResults.py\
+                        --reviewid $review_id\
+                        --buildurl $BUILD_URL\
+                        --buildstate $currentBuild.currentResult"
             }
         }
     }
