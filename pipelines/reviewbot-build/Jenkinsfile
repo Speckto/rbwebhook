@@ -135,7 +135,6 @@ pipeline {
                     cd src
                     ls -la
                     make
-                    exit 1
                     '''
             }
         }
