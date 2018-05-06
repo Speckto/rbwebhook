@@ -9,6 +9,8 @@ pipeline {
      * The reviewbot plugin does not support declarative pipelines, so
      * we cannot have one of the parameters be a review URL.
      * This forces us to manually retrieve the patch file and post results.
+     * ...but removing dependence on that plugin isn't the worst thing in
+     * the world. It is not well maintained.
      */
     parameters {
         string(defaultValue: '',
@@ -48,7 +50,7 @@ pipeline {
                            tidy: false),
                        source: depotSource('//depot/MMA/main/...'))
             }
-
+/* The following block is disabled for now */
 /*            p4sync(charset: 'none',
                    credentials: 'perforce_Neil.Potter',
                    populate: [$class: 'AutoCleanImpl',
@@ -132,6 +134,15 @@ pipeline {
                     cd src
                     ls -la
                     make'''
+            }
+        }
+
+        stage('PostBuildResults') {
+            steps {
+                sh '/home/vagrant/rbwebhook/PostBuildResults.py \
+                        --reviewid ${review_id} \
+                        --buildurl ${BUILD_URL} \
+                        --buildstate ${currentBuild.currentResult}'
             }
         }
     }
