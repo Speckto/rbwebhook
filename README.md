@@ -18,6 +18,4 @@ directly (the diff doesn't deal with perforce moved files very well).
 # TODO
 - The interface between some scripts and the Jenkins pipeline is currently
   shell exit codes which is rather clunky
-- Pull out review is relevant criteria into a parameter so script is 
-  generalised for multi-project environments with their own builders.
 

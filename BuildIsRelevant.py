@@ -8,8 +8,11 @@ import argparse
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--reviewid", required=True, help="review id to post to")
+parser.add_argument("--depotpath", required=True,
+                    help="Depot path considered relevant")
 args = parser.parse_args()
 reviewId = args.reviewid
+depotPath = args.depotpath
 
 client = RBClient('http://127.0.0.1/',
                   username='Jenkins.Reviewbot',password='useruserrb')
@@ -27,8 +30,8 @@ for p in reviewRequest.target_people:
 
 # check file paths are in mainline
 for line in open("patch.diff"):
-    if (line.startswith("--- //depot/MMA/main/") or
-        line.startswith("+++ //depot/MMA/main/")):
+    if (line.startswith("--- " + depotPath) or
+        line.startswith("+++ " + depotPath)):
         print "Review diff contains files for relevant product"
         relevantFiles = True
         break
