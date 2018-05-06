@@ -12,13 +12,14 @@ args = parser.parse_args()
 reviewId = args.reviewid
 
 client = RBClient('http://127.0.0.1/',
-                 username='Jenkins.Reviewbot',password='useruserrb')
+                  username='Jenkins.Reviewbot',
+                  password='useruserrb')
 root = client.get_root()
 
 # Get the revision number of the latest diff from the review
 rr = root.get_review_request(review_request_id=reviewId)
 diffRevision = rr.get_latest_diff().revision
-print "Latest diff revision for review",reviewId,"is",diffRevision
+print "Latest diff revision for review", reviewId, "is", diffRevision
 diff = root.get_diff(review_request_id=reviewId, diff_revision=diffRevision)
 patch = diff.get_patch()
 
@@ -28,7 +29,7 @@ print patch.data
 print "-----------------------------------------------------------------------"
 
 outF = open("patch.diff", "w")
-print >>outF,patch.data
+print >>outF, patch.data
 outF.close()
 print "Patch written to patch.diff"
 

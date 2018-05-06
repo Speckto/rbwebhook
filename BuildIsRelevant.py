@@ -15,7 +15,8 @@ reviewId = args.reviewid
 depotPath = args.depotpath
 
 client = RBClient('http://127.0.0.1/',
-                  username='Jenkins.Reviewbot',password='useruserrb')
+                  username='Jenkins.Reviewbot',
+                  password='useruserrb')
 root = client.get_root()
 
 reviewRequest = root.get_review_request(review_request_id=reviewId)
@@ -31,12 +32,12 @@ for p in reviewRequest.target_people:
 # check file paths are in mainline
 for line in open("patch.diff"):
     if (line.startswith("--- " + depotPath) or
-        line.startswith("+++ " + depotPath)):
+       line.startswith("+++ " + depotPath)):
         print "Review diff contains files for relevant product"
         relevantFiles = True
         break
 
-if relevantFiles == True and reviewForBot == True:
+if relevantFiles and reviewForBot:
     print "This review is relevant (exit code=0)"
     exit(0)
 else:

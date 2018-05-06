@@ -17,10 +17,10 @@ args = parser.parse_args()
 
 reviewId = args.reviewid
 buildUrl = args.buildurl
-buildState  = args.buildstate
+buildState = args.buildstate
 
 client = RBClient('http://127.0.0.1/',
-                 username='Jenkins.Reviewbot',password='useruserrb')
+                  username='Jenkins.Reviewbot', password='useruserrb')
 root = client.get_root()
 
 # Get the revision number of the latest diff from the review
@@ -34,8 +34,8 @@ else:
     msg = 'Opps! I could not build these changes. See ' + buildUrl
 
 reviews.create(body_bottom=msg,
-               public=True);
+               public=True)
 
-print "Posted to review "+reviewId+" build state="+buildState+\
-       ". Build url="+buildUrl
+print "Posted to review " + reviewId + " build state=" + buildState + \
+       ". Build url=" + buildUrl
 

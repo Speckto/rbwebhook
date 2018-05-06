@@ -1,8 +1,9 @@
 #!/usr/bin/python
-# Work out if the change number is a perforce change and contains shelved files.
+# Work out if the change number is a perforce change and contains shelved
+# files.
 # We're going to want to prefer using a shelve over applying the diff as file
 # moves don't work right with patch
-from P4 import P4,P4Exception    # Import the module
+from P4 import P4, P4Exception
 import argparse
 
 parser = argparse.ArgumentParser()
@@ -18,10 +19,11 @@ if changeNo != "" and changeNo.isdigit():
     p4.port = "1666"
     p4.user = "Neil.Potter"
 
-    try:                               # Catch exceptions with try/except
-        p4.connect()                   # Connect to the Perforce server
-        desc = p4.run("describe","-S",changeNo) # Run "p4 info" (returns a dict)
-        p4.disconnect()                # Disconnect from the server
+    try:
+        p4.connect()
+        # Run "p4 info" (returns a dict)
+        desc = p4.run("describe", "-S", changeNo)
+        p4.disconnect()
     except P4Exception as p4e:
         print "Error occurred - listing error messages"
         print p4e
@@ -34,7 +36,7 @@ if changeNo != "" and changeNo.isdigit():
         raise
 
     for e in desc:
-        if e.has_key('shelved'):
+        if 'shelved' in e:
             shelvedChange = True
             break
 else:
@@ -43,7 +45,7 @@ else:
     shelvedChange = False
 
 # TODO: This is a rubbish interface. Needs revision
-if shelvedChange == True:
+if shelvedChange:
     print "Shelved change - exiting with code 0"
     exit(0)
 else:
