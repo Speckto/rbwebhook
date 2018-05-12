@@ -25,6 +25,10 @@ pipeline {
                description: '',
                name: 'review_commit_id',
                trim: false)
+        booleanParam(
+               defaultValue: false,
+               description: '',
+               name: 'use_shelve')
     }
 
     stages {
