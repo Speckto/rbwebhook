@@ -32,11 +32,6 @@ pipeline {
     }
 
     stages {
-        stage('FetchPatch') {
-            steps {
-                sh "/home/vagrant/rbwebhook/FetchPatch.py --reviewid $review_id"
-            }
-        }
 
         stage('FetchSource') {
             steps {
@@ -54,59 +49,22 @@ pipeline {
                            tidy: false),
                        source: depotSource('//depot/MMA/main/...'))
             }
-/* The following block is disabled for now */
-/*            p4sync(charset: 'none',
-                   credentials: 'perforce_Neil.Potter',
-                   populate: [$class: 'AutoCleanImpl',
-                              delete: true,
-                              modtime: false,
-                              pin: '',
-                              quiet: true,
-                              replace: true],
-                   workspace: [$class: 'ManualWorkspaceImpl',
-                               charset: 'none',
-                               name:
-                               'jenkins-${NODE_NAME}-${JOB_NAME}-${EXECUTOR_NUMBER}',
-                               pinHost: false,
-                               spec: [allwrite: false,
-                                      clobber: false,
-                                      compress: false.
-                                      line: 'LOCAL',
-                                      locked: false,
-                                      modtime: false,
-                                      rmdir: false,
-                                      view: '''//depot/MMA/main/... //jenkins-${NODE_NAME}-${JOB_NAME}-${EXECUTOR_NUMBER}/...'''
-                                     ]
-                              ]
-                  )*/
         }
 
         stage('IfNoShelveApplyPatch') {
             when {
-                expression {
-                    RETURN_CODE = sh(
-                        returnStatus: true,
-                        script:
-                        "/home/vagrant/rbwebhook/IsChangeWithshelve.py \
-                         --reviewcommitid $review_commit_id")
-                    return RETURN_CODE == 1
-                }
+                expression { params.use_shelve == false }
             }
+
             steps {
+                sh "/home/vagrant/rbwebhook/FetchPatch.py --reviewid $review_id"
                 sh 'patch -p 3 patch.diff'
             }
         }
 
         stage('IfShelveApplyShelve') {
             when {
-                expression {
-                    RETURN_CODE = sh(
-                        returnStatus: true,
-                        script:
-                        "/home/vagrant/rbwebhook/IsChangeWithshelve.py\
-                         --reviewcommitid $review_commit_id")
-                    return RETURN_CODE == 0
-                }
+                expression { params.use_shelve == true }
             }
             steps {
                 p4unshelve(credential: 'perforce_Neil.Potter',
