@@ -5,6 +5,7 @@
 #
 from rbtools.api.client import RBClient
 import argparse
+import ConfigParser, os
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--reviewid", required=True, help="review id to post to")
@@ -19,8 +20,14 @@ reviewId = args.reviewid
 buildUrl = args.buildurl
 buildState = args.buildstate
 
-client = RBClient('http://127.0.0.1/',
-                  username='Jenkins.Reviewbot', password='useruserrb')
+config = ConfigParser.ConfigParser()
+
+config.read(
+    '/home/vagrant/rbwebhook/webhook-service/RBJenkinsHookService.config')
+
+client = RBClient(config.get('hookservice', 'reviewboard_server'),
+                  username=config.get('hookservice', 'reviewboard_user'),
+                  password=config.get('hookservice', 'reviewboard_password'))
 root = client.get_root()
 
 # Get the revision number of the latest diff from the review

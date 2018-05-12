@@ -5,7 +5,7 @@ from P4 import P4, P4Exception
 
 app = Bottle()
 
-def ReviewCommitHasShelve(reviewCommitId):
+def ReviewCommitHasShelve(cfg, reviewCommitId):
     """
     Determines if the specified commit id (usually a git hash or a perforce
     change has a perforce change.
@@ -13,8 +13,8 @@ def ReviewCommitHasShelve(reviewCommitId):
     shelvedChange = False
     if reviewCommitId != "" and reviewCommitId.isdigit():
         p4 = P4()
-        p4.port = "1666"
-        p4.user = "Neil.Potter"
+        p4.port = cfg['hookservice.perforce_port']
+        p4.user = cfg['hookservice.perforce_user']
 
         try:
             p4.connect()
@@ -46,16 +46,16 @@ def ReviewCommitHasShelve(reviewCommitId):
         print "Review commit " + reviewCommitId + " is not a shelved change."
     return shelvedChange
 
-def ReviewRelevant(reviewId, depotPath):
+def ReviewRelevant(cfg, reviewId):
     """
     Determines if a review is relevant to the bot. Checks if it is
     address to the bot and if the diff alters the specified depot path
     """
 
     # Only interested in reviews addressed to the bot
-    client = RBClient('http://127.0.0.1/',
-                      username='Jenkins.Reviewbot',
-                      password='useruserrb')
+    client = RBClient(cfg['hookservice.reviewboard_server'],
+                      username=cfg['hookservice.reviewboard_user'],
+                      password=cfg['hookservice.reviewboard_password'])
     root = client.get_root()
 
     reviewRequest = root.get_review_request(review_request_id=reviewId)
@@ -63,7 +63,7 @@ def ReviewRelevant(reviewId, depotPath):
     relevantFiles = False
     reviewForBot = False
     for p in reviewRequest.target_people:
-        if p.title == "Jenkins.Reviewbot":
+        if p.title == cfg['hookservice.reviewboard_user']:
             print "Review is addressed to the review bot."
             reviewForBot = True
             break
@@ -74,6 +74,7 @@ def ReviewRelevant(reviewId, depotPath):
                              diff_revision=diffRevision)
         patch = diff.get_patch()
 
+        depotPath = cfg['hookservice.depot_path_prefix']
         for line in patch.data.splitlines():
             if (line.startswith("--- " + depotPath) or
                line.startswith("+++ " + depotPath)):
@@ -88,15 +89,15 @@ def ReviewRelevant(reviewId, depotPath):
 
     return (reviewForBot and relevantFiles)
 
-def KickJenkinsJob(job, reviewUrl, reviewId, reviewCommitId, shelvedChange):
+def KickJenkinsJob(cfg, job, reviewUrl, reviewId, reviewCommitId, shelvedChange):
     """
     Kicks off a build of a jenkins job with the specified parameters
     """
     try:
         server = jenkins.Jenkins(
-            'http://localhost:8080',
-            username='Jenkins.ReviewBot',
-            password='dc446ad47c6c79fe4814f21ad594b023')
+            cfg['hookservice.jenkins_server'],
+            username=cfg['hookservice.jenkins_user'],
+            password=cfg['hookservice.jenkins_apikey'])
 
         if server.job_exists(job):
             print 'job ' + job + ' exists. Attempting trigger...'
@@ -128,17 +129,18 @@ def result():
     """
     Handle post containing these parameters
     @param job:              Name of the jenkins job to trigger
-    @param REVIEW_URL:       URL of review in reviewbaord
+    @param review_url:       URL of review in reviewbaord
     @param review_id:        The id for the review
     @param review_commit_id: The "commit id" for the review
     """
+    cfg = request.app.config
     if ('job' in request.forms and
-        'REVIEW_URL' in request.forms and
+        'review_url' in request.forms and
         'review_id' in request.forms and
         'review_commit_id' in request.forms):
 
         job = request.forms['job']
-        reviewUrl = request.forms['REVIEW_URL']
+        reviewUrl = request.forms['review_url']
         reviewId = request.forms['review_id']
         reviewCommitId = request.forms['review_commit_id']
         print '>>> Received request\n'\
@@ -147,11 +149,12 @@ def result():
                          '    id=' + reviewId + 's\n'\
                          '    cid=' + reviewCommitId
 
-        if ReviewRelevant(reviewId,
-                          "//depot/MMA/"):
-            shelvedChange = ReviewCommitHasShelve(reviewCommitId)
+        if ReviewRelevant(cfg,
+                          reviewId):
+            shelvedChange = ReviewCommitHasShelve(cfg, reviewCommitId)
 
-            return KickJenkinsJob(job,
+            return KickJenkinsJob(cfg,
+                                  job,
                                   reviewUrl,
                                   reviewId,
                                   reviewCommitId,
@@ -160,4 +163,7 @@ def result():
         print 'ERROR: Missing parameter'
         return 'ERROR: Missing parameter'
 
+app.config.load_config('RBJenkinsHookService.config')
+print "Application configuration:"
+print app.config
 app.run(host='localhost', port=5000, debug=True)

@@ -1,0 +1,21 @@
+[hookservice]
+; perforce server and port and credentials
+perforce_port =
+perforce_user =
+;
+; Jenkins server location and credentials. Use an api-key not a password
+jenkins_server =
+jenkins_user =
+jenkins_apikey =
+;
+; Reviewboard server location and credentials
+; This user is used to communicate with the reviewboard server, additionally,
+; only reviews addressed to this user are built
+reviewboard_server =
+reviewboard_user =
+reviewboard_password =
+;
+; A prefix of a file depot path which is used to filter reviews.
+; Only reviews which touch files in this area will be built
+; e.g. //depot/myproject/main/
+depot_path_prefix =
