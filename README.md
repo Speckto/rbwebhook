@@ -1,10 +1,11 @@
 # Jenkins-Reviewboard "Review bot"
 # Introduction
-This tool is a series of pipelines for allowing reviewboard reviews to
+This tool is a tool of pipelines for allowing reviewboard reviews to
 to trigger a Jenkins job which builds the changes.
 
 Intended to be triggered from a reviewboard web-hook, this attempts to filter
-calls to specific areas of a perforce depot.
+calls to specific areas of a perforce depot triggering a Jenkins job
+for applicable reviews.
 
 Where perforce is being used as the source control system, a shelved change
 will be unshelved, falling back to applying the diff fetched from reviewboard
@@ -21,17 +22,19 @@ latter allows use with git-p4.
 # Architecture
 - Reviewboard server webhook invokes URL on a proxy service providing
   information about the review (url, id, commit id)
-- Proxy service forwards request Jenkins server, starting a build of a
-  jenkins job with parameters provided by reviewboard server
-- "callback" pipeline job in Jenkins receives request and identifies if it is
-  related to the perforce server area of interest.
-  If it is, invokes a build job
-- 'build' job which attempts to retrieve the changes from the review and posts
+- Proxy service determines if the review is targetted at a review bot user
+  and if the review is for a depot area of interest.
+  If the review should be built, it determines if the review's commit contains
+  a shelve, before triggering the jenkins job build with a series of parameters
+- Jenkins 'build' job attempts to retrieve the changes from the review and posts
   back success or failure
+
 ## Proxy
-Flask-based "proxy" to receive webhook calls from reviewboard and forward
+Bottle-based "proxy" to receive webhook calls from reviewboard and forward
 to jenkins with proper authentication. Reviewboard does not appear capable of
 providing this authentication on a properly secured Jenkins deployment.
+The proxy also filters requests to avoid excessive triggering of the build
+job in Jenkins
 
 # Reviewboard server configuration
 Configure a web hook
@@ -40,16 +43,13 @@ Configure a web hook
 - "Use custom payload" checked
 - Custom content:
 ```
-job=MMA-main-reviewbot-callback-pipeline&REVIEW_URL={{review_request.absolute_url}}&review_id={{review_request.id}}&review_commit_id={{review_request.commit_id}}
+job=MMA-main-reviewbot-build-pipeline&REVIEW_URL={{review_request.absolute_url}}&review_id={{review_request.id}}&review_commit_id={{review_request.commit_id}}
 ```
 
-# Proxy
-A python "Flask" based microservice application is provided.
-Deploy this using your favourite microservice server.
-
-# TODO
+# Task list
 - The interface between some scripts and the Jenkins pipeline is currently
   shell exit codes which is rather clunky
-- Flask application needs better packaging
-- Provide deployment scripts for flask application (use uWSGI?)
+- Bottle application needs better packaging
+- Provide deployment scripts for bottle application (use uWSGI?)
+- Read configuration file containing settings, etc
 
