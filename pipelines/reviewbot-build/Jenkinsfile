@@ -60,7 +60,7 @@ pipeline {
                 sh """
                    jrbb=/home/vagrant/jrbbinstall
                     cd \$jrbb
-                    /home/bin/wpython.py bin/jrbbFetchPatch\
+                    /home/vagrant/bin/wpython.py bin/jrbbFetchPatch\
                         --cfg /home/vagrant/jenkinsreviewbot/jrbb.config\
                         --reviewid $review_id\
                         --out ${WORKSPACE}/patch.diff
@@ -121,7 +121,7 @@ pipeline {
             sh """
                 jrbb=/home/vagrant/jrbbinstall
                 cd \$jrbb
-                /home/bin/wpython.py bin/jrbbPostBuildResults\
+                /home/vagrant/bin/wpython.py bin/jrbbPostBuildResults\
                     --cfg /home/vagrant/jenkinsreviewbot/jrbb.config\
                     --reviewid $review_id\
                     --buildurl $BUILD_URL\
