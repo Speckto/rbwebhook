@@ -1,4 +1,4 @@
-# Jenkins-Reviewboard "Review bot"
+# Jenkins-Reviewboard Bot
 # Introduction
 This tool is a tool of pipelines for allowing reviewboard reviews to
 to trigger a Jenkins job which builds the changes.

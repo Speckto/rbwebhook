@@ -57,7 +57,9 @@ pipeline {
             }
 
             steps {
-                sh "/home/vagrant/jenkinsreviewbot/bin/jrbbFetchPatch --reviewid $review_id"
+                sh "/home/vagrant/jenkinsreviewbot/bin/jrbbFetchPatch\
+                        --cfg /home/vagrant/jenkinsreviewbot/jrbb.config\
+                        --reviewid $review_id"
                 sh 'patch -p 3 patch.diff'
             }
         }
@@ -111,6 +113,7 @@ pipeline {
          */
         always {
             sh "/home/vagrant/jenkinsreviewbot/bin/jrbbPostBuildResults\
+                    --cfg /home/vagrant/jenkinsreviewbot/jrbb.config\
                     --reviewid $review_id\
                     --buildurl $BUILD_URL\
                     --buildstate $currentBuild.currentResult"

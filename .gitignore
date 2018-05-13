@@ -1,2 +1,4 @@
 jrbb.config
+*.pyc
+jenkinsreviewbot.egg-info/
 webhook-service/RBJenkinsHookService.pyc

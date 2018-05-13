@@ -8,6 +8,9 @@ def main():
     passed or failed
     '''
     parser = argparse.ArgumentParser()
+    parser.add_argument("--cfg",
+                        required=True,
+                        help="Configuration file")
     parser.add_argument("--reviewid",
                         required=True,
                         help="review id to post to")
@@ -27,13 +30,17 @@ def main():
 
     config = ConfigParser.ConfigParser()
 
-    config.read(
-        '/home/vagrant/jenkinsreviewbot/jrb.config')
+    try:
+        config.read(args.cfg)
 
-    client = RBClient(
-        config.get('hookservice', 'reviewboard_server'),
-        username=config.get('hookservice', 'reviewboard_user'),
-        password=config.get('hookservice', 'reviewboard_password'))
+        client = RBClient(
+            config.get('hookservice', 'reviewboard_server'),
+            username=config.get('hookservice', 'reviewboard_user'),
+            password=config.get('hookservice', 'reviewboard_password'))
+    except ConfigParser.NoSectionError:
+        print "Configuration file " + args.cfg + " not found or missing items"
+        exit(1)
+
     root = client.get_root()
 
     # Get the revision number of the latest diff from the review
