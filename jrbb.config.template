@@ -19,3 +19,6 @@ reviewboard_password =
 ; Only reviews which touch files in this area will be built
 ; e.g. //depot/myproject/main/
 depot_path_prefix =
+;
+; The job in jenkins to run which does the build
+jenkins_job_name = 

@@ -2,6 +2,7 @@ import jenkins
 from rbtools.api.client import RBClient
 from bottle import Bottle, route, run, post, request
 from P4 import P4, P4Exception
+import argparse
 
 app = Bottle()
 
@@ -128,23 +129,20 @@ def KickJenkinsJob(cfg, job, reviewUrl, reviewId, reviewCommitId, shelvedChange)
 def result():
     """
     Handle post containing these parameters
-    @param job:              Name of the jenkins job to trigger
     @param review_url:       URL of review in reviewbaord
     @param review_id:        The id for the review
     @param review_commit_id: The "commit id" for the review
     """
     cfg = request.app.config
-    if ('job' in request.forms and
-        'review_url' in request.forms and
+    if ('review_url' in request.forms and
         'review_id' in request.forms and
         'review_commit_id' in request.forms):
 
-        job = request.forms['job']
+        job = cfg['hookservice.jenkins_job_name'],
         reviewUrl = request.forms['review_url']
         reviewId = request.forms['review_id']
         reviewCommitId = request.forms['review_commit_id']
         print '>>> Received request\n'\
-                         '    job=' + job + '\n'\
                          '    url=' + reviewUrl + '\n'\
                          '    id=' + reviewId + 's\n'\
                          '    cid=' + reviewCommitId
@@ -164,7 +162,29 @@ def result():
         return 'ERROR: Missing parameter'
 
 def main():
-    app.config.load_config('RBJenkinsHookService.config')
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--cfg",
+                        required=True,
+                        help="Configuration file")
+    args = parser.parse_args()
+
+    app.config.load_config(args.cfg)
+
+    for opt in ['hookservice.perforce_port',
+                'hookservice.perforce_user',
+                'hookservice.jenkins_server',
+                'hookservice.jenkins_user',
+                'hookservice.jenkins_apikey',
+                'hookservice.reviewboard_server',
+                'hookservice.reviewboard_user',
+                'hookservice.reviewboard_password',
+                'hookservice.depot_path_prefix',
+                'hookservice.jenkins_job_name',
+               ]:
+        if not opt in app.config:
+            print "Error: Configuration is missing option " + opt
+            exit(1)
+
     print "Application configuration:"
     print app.config
     app.run(host='localhost', port=5000, debug=True)
