@@ -163,7 +163,8 @@ def result():
         print 'ERROR: Missing parameter'
         return 'ERROR: Missing parameter'
 
-app.config.load_config('RBJenkinsHookService.config')
-print "Application configuration:"
-print app.config
-app.run(host='localhost', port=5000, debug=True)
+def main():
+    app.config.load_config('RBJenkinsHookService.config')
+    print "Application configuration:"
+    print app.config
+    app.run(host='localhost', port=5000, debug=True)
