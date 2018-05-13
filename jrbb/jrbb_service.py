@@ -138,7 +138,7 @@ def result():
         'review_id' in request.forms and
         'review_commit_id' in request.forms):
 
-        job = cfg['hookservice.jenkins_job_name'],
+        job = cfg['hookservice.jenkins_job_name']
         reviewUrl = request.forms['review_url']
         reviewId = request.forms['review_id']
         reviewCommitId = request.forms['review_commit_id']
