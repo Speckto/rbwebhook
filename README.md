@@ -14,8 +14,7 @@ depot to trigger a jenkins build of the diff.
 ```
 git clone <path to repo>
 ```
-- It is recommend to deploy the application within a virtualenv
-  Establish a virtualenv
+- It is recommend to deploy the application within a virtualenv. Establish one.
 ```
 mkdir jrbbinstall
 cd jrbbinstall
