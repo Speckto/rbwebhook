@@ -170,7 +170,10 @@ def main():
 
     app.config.load_config(args.cfg)
 
-    for opt in ['hookservice.perforce_port',
+    for opt in [
+                'hookservice.server_host',
+                'hookservice.server_port',
+                'hookservice.perforce_port',
                 'hookservice.perforce_user',
                 'hookservice.jenkins_server',
                 'hookservice.jenkins_user',
@@ -187,4 +190,6 @@ def main():
 
     print "Application configuration:"
     print app.config
-    app.run(host='localhost', port=5000, debug=True)
+    app.run(host=cfg['hookservice.server_host'],
+            port=cfg['hookservice.server_port'],
+            debug=True)

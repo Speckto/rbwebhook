@@ -1,4 +1,13 @@
 [hookservice]
+;
+; the host on which the service should listen and which reviewboard will
+; make a call to (e.g. localhost). Use 0.0.0.0 for all adapters
+server_host =
+;
+; the port on which the service should listen and which reviewboard will
+; make a call to (e.g. 5000)
+server_port =
+;
 ; perforce server and port and credentials
 perforce_port =
 perforce_user =
