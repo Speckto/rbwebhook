@@ -39,6 +39,6 @@ setup(
             'jrbb_fetchpatch=jrbb.jrbb_fetchpatch:main',
             'jrbb_postbuildresults=jrbb.jrbb_postbuildresults:main',
         ]
-    }
-
+    },
+    scripts=['bin/jrbb_runitwithvenv.sh'],
     )
