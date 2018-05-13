@@ -6,7 +6,7 @@ import os
 def main():
     '''
     Fetches the latest patch diff from the review given the review id passed
-    as a parameter and writes it to patch.diff in the current directory.
+    as a parameter and writes it an output file.
     '''
     parser = argparse.ArgumentParser()
     parser.add_argument("--reviewid",
@@ -15,6 +15,9 @@ def main():
     parser.add_argument("--cfg",
                         required=True,
                         help="Configuration file")
+    parser.add_argument("--out",
+                        required=True,
+                        help="Output file location (e.g. patch.diff)")
     args = parser.parse_args()
     reviewId = args.reviewid
 
@@ -46,8 +49,8 @@ def main():
     print patch.data
     print "--------------------------------------------------------------------"
 
-    outF = open("patch.diff", "w")
+    outF = open(args.out, "w")
     print >>outF, patch.data
     outF.close()
-    print "Patch written to patch.diff"
+    print "Patch written to " + args.out
 

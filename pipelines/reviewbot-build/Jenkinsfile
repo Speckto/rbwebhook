@@ -57,9 +57,13 @@ pipeline {
             }
 
             steps {
-                sh "/home/vagrant/jenkinsreviewbot/bin/jrbbFetchPatch\
+                sh "jrbb=/home/vagrant/jrbbinstall
+                    cd $jrbb
+                    /home/bin/wpython.py bin/jrbbFetchPatch\
                         --cfg /home/vagrant/jenkinsreviewbot/jrbb.config\
-                        --reviewid $review_id"
+                        --reviewid $review_id\
+                        --out ${WORKSPACE}/patch.diff
+                    cd ${WORKSPACE}"
                 sh 'patch -p 3 patch.diff'
             }
         }
@@ -112,7 +116,9 @@ pipeline {
          * which has variable substitution applied
          */
         always {
-            sh "/home/vagrant/jenkinsreviewbot/bin/jrbbPostBuildResults\
+            sh "jrbb=/home/vagrant/jrbbinstall
+                cd $jrbb
+                /home/bin/wpython.py bin/jrbbPostBuildResults\
                     --cfg /home/vagrant/jenkinsreviewbot/jrbb.config\
                     --reviewid $review_id\
                     --buildurl $BUILD_URL\
