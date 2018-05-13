@@ -58,7 +58,7 @@ pipeline {
 
             steps {
                 sh """
-                   /home/vagrant/jrbbinstall/jrbb_runitwithvenv.sh\
+                   /home/vagrant/jrbbinstall/bin/jrbb_runitwithvenv.sh\
                         /home/vagrant/jrbbinstall\
                         /home/vagrant/jrbbinstall/bin/jrbb_fetchpatch\
                         --cfg /home/vagrant/jenkinsreviewbot/jrbb.config\
@@ -118,7 +118,7 @@ pipeline {
          */
         always {
             sh  """
-                /home/vagrant/jrbbinstall/jrbb_runitwithvenv.sh\
+                /home/vagrant/jrbbinstall/bin/jrbb_runitwithvenv.sh\
                     /home/vagrant/jrbbinstall\
                     /home/vagrant/jrbbinstall/bin/jrbb_postbuildresults\
                     --cfg /home/vagrant/jenkinsreviewbot/jrbb.config\
