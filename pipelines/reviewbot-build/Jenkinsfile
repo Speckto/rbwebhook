@@ -64,7 +64,6 @@ pipeline {
                         --cfg /home/vagrant/jenkinsreviewbot/jrbb.config\
                         --reviewid $review_id\
                         --out ${WORKSPACE}/patch.diff
-                    cd ${WORKSPACE}
                     """
                 sh 'patch -p 3 patch.diff'
             }
