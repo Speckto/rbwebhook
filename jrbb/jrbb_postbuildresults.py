@@ -34,9 +34,9 @@ def main():
         config.read(args.cfg)
 
         client = RBClient(
-            config.get('hookservice', 'reviewboard_server'),
-            username=config.get('hookservice', 'reviewboard_user'),
-            password=config.get('hookservice', 'reviewboard_password'))
+            config.get('jrbb', 'reviewboard_server'),
+            username=config.get('jrbb', 'reviewboard_user'),
+            password=config.get('jrbb', 'reviewboard_password'))
     except ConfigParser.NoSectionError:
         print "Configuration file " + args.cfg + " not found or missing items"
         exit(1)

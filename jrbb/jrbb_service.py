@@ -3,8 +3,12 @@ from rbtools.api.client import RBClient
 from bottle import Bottle, route, run, post, request
 from P4 import P4, P4Exception
 import argparse
+import re
+import itertools
 
 app = Bottle()
+
+depotPaths = dict()
 
 def ReviewCommitHasShelve(cfg, reviewCommitId):
     """
@@ -14,8 +18,8 @@ def ReviewCommitHasShelve(cfg, reviewCommitId):
     shelvedChange = False
     if reviewCommitId != "" and reviewCommitId.isdigit():
         p4 = P4()
-        p4.port = cfg['hookservice.perforce_port']
-        p4.user = cfg['hookservice.perforce_user']
+        p4.port = cfg['jrbb.perforce_port']
+        p4.user = cfg['jrbb.perforce_user']
 
         try:
             p4.connect()
@@ -47,58 +51,95 @@ def ReviewCommitHasShelve(cfg, reviewCommitId):
         print "Review commit " + reviewCommitId + " is not a shelved change."
     return shelvedChange
 
+def GetJob(line):
+    for path in depotPaths:
+        job = depotPaths[path]
+        if (line.startswith("--- " + path) or
+            line.startswith("+++ " + path)):
+            return job
+    # None found
+    return ""
+
 def ReviewRelevant(cfg, reviewId):
     """
     Determines if a review is relevant to the bot. Checks if it is
-    address to the bot and if the diff alters the specified depot path
+    address to the bot and if the diff alters the specified depot path.
+    Returns a dict indicating if it is relevant to to the build and validator
+    bot.
     """
 
     # Only interested in reviews addressed to the bot
-    client = RBClient(cfg['hookservice.reviewboard_server'],
-                      username=cfg['hookservice.reviewboard_user'],
-                      password=cfg['hookservice.reviewboard_password'])
+    client = RBClient(cfg['jrbb.reviewboard_server'],
+                      username=cfg['jrbb.reviewboard_user'],
+                      password=cfg['jrbb.reviewboard_password'])
     root = client.get_root()
 
     reviewRequest = root.get_review_request(review_request_id=reviewId)
 
+    hasDiff = False
     relevantFiles = False
-    reviewForBot = False
+    reviewForBuildBot = False
+    reviewForValidatorBot = False
     for p in reviewRequest.target_people:
-        if p.title == cfg['hookservice.reviewboard_user']:
-            print "Review is addressed to the review bot."
-            reviewForBot = True
-            break
+        if p.title == cfg['jrbb.reviewboard_user']:
+            print "Build bot is review recipient."
+            reviewForBuildBot = True
+        elif 'jrbb_validator.validator_reviewboard_user' in cfg and\
+             p.title == cfg['jrbb_validator.validator_reviewboard_user']:
+            print "Validator bot is review recipient."
+            reviewForValidatorBot = True
 
-    if reviewForBot:
-        diffRevision = reviewRequest.get_latest_diff().revision
-        diff = root.get_diff(review_request_id=reviewId,
-                             diff_revision=diffRevision)
-        patch = diff.get_patch()
+    if reviewForBuildBot or reviewForValidatorBot:
+        try:
+            latestDiff = reviewRequest.get_latest_diff()
+            hasDiff = True
+        except AttributeError:
+            hasDiff = False
 
-        depotPath = cfg['hookservice.depot_path_prefix']
-        for line in patch.data.splitlines():
-            if (line.startswith("--- " + depotPath) or
-               line.startswith("+++ " + depotPath)):
-                print "Review diff contains files for relevant product"
-                relevantFiles = True
-                break
+        if hasDiff:
+            diffRevision = latestDiff.revision
+            diff = root.get_diff(review_request_id=reviewId,
+                                 diff_revision=diffRevision)
+            patch = diff.get_patch()
 
-        if not relevantFiles:
-            print "Review diff does not contain files for relevant product"
+            for line in patch.data.splitlines():
+                jobName = GetJob(line)
+                if jobName != "":
+                    print "Review diff contains files for " + jobName
+                    relevantFiles = True
+                    break
+
+            if not relevantFiles:
+                print "Review diff does not contain files for relevant product"
+        else:
+            print "Review has no diff so is not for the bot"
     else:
-        print "Review is not addressed to the review bot."
+        print "Review is not addressed to either bot"
 
-    return (reviewForBot and relevantFiles)
+    # The validator can run on anything with a diff addressed to it
+    # The normal build bot requires diff in a supported depot path
+    ret = {'reviewForBuildBot': (reviewForBuildBot and relevantFiles),
+           'reviewForValidatorBot': (reviewForValidatorBot and hasDiff),
+           'buildBotJob': jobName}
+    print "Relevant to build bot    : " + str(ret['reviewForBuildBot'])
+    print "Build bot job            : " + ret['buildBotJob']
+    print "Relevant to validator bot: " + str(ret['reviewForValidatorBot'])
+    return ret
 
-def KickJenkinsJob(cfg, job, reviewUrl, reviewId, reviewCommitId, shelvedChange):
+def KickJenkinsJob(cfg,
+                   job,
+                   reviewUrl,
+                   reviewId,
+                   reviewCommitId,
+                   shelvedChange):
     """
     Kicks off a build of a jenkins job with the specified parameters
     """
     try:
         server = jenkins.Jenkins(
-            cfg['hookservice.jenkins_server'],
-            username=cfg['hookservice.jenkins_user'],
-            password=cfg['hookservice.jenkins_apikey'])
+            cfg['jrbb.jenkins_server'],
+            username=cfg['jrbb.jenkins_user'],
+            password=cfg['jrbb.jenkins_apikey'])
 
         if server.job_exists(job):
             print 'job ' + job + ' exists. Attempting trigger...'
@@ -138,25 +179,30 @@ def result():
         'review_id' in request.forms and
         'review_commit_id' in request.forms):
 
-        job = cfg['hookservice.jenkins_job_name']
         reviewUrl = request.forms['review_url']
         reviewId = request.forms['review_id']
         reviewCommitId = request.forms['review_commit_id']
         print '>>> Received request\n'\
                          '    url=' + reviewUrl + '\n'\
-                         '    id=' + reviewId + 's\n'\
+                         '    id=' + reviewId + '\n'\
                          '    cid=' + reviewCommitId
 
-        if ReviewRelevant(cfg,
-                          reviewId):
+        rel = ReviewRelevant(cfg,
+                             reviewId)
+
+        if rel['reviewForBuildBot'] == True:
             shelvedChange = ReviewCommitHasShelve(cfg, reviewCommitId)
 
             return KickJenkinsJob(cfg,
-                                  job,
+                                  rel['buildBotJob'],
                                   reviewUrl,
                                   reviewId,
                                   reviewCommitId,
                                   shelvedChange)
+
+        if rel['reviewForValidatorBot'] == True:
+            print "TODO: Invoke the validator bot"
+
     else:
         print 'ERROR: Missing parameter'
         return 'ERROR: Missing parameter'
@@ -170,26 +216,39 @@ def main():
 
     app.config.load_config(args.cfg)
 
+    # Mandatory parameters
     for opt in [
-                'hookservice.server_host',
-                'hookservice.server_port',
-                'hookservice.perforce_port',
-                'hookservice.perforce_user',
-                'hookservice.jenkins_server',
-                'hookservice.jenkins_user',
-                'hookservice.jenkins_apikey',
-                'hookservice.reviewboard_server',
-                'hookservice.reviewboard_user',
-                'hookservice.reviewboard_password',
-                'hookservice.depot_path_prefix',
-                'hookservice.jenkins_job_name',
+                'jrbb.server_host',
+                'jrbb.server_port',
+                'jrbb.perforce_port',
+                'jrbb.perforce_user',
+                'jrbb.jenkins_server',
+                'jrbb.jenkins_user',
+                'jrbb.jenkins_apikey',
+                'jrbb.reviewboard_server',
+                'jrbb.reviewboard_user',
+                'jrbb.reviewboard_password',
+                'jrbb.paths_to_jobs',
                ]:
         if not opt in app.config:
             print "Error: Configuration is missing option " + opt
             exit(1)
 
+    # Extract job to depot path mappings from config
+    l = app.config['jrbb.paths_to_jobs'].split()
+    for path, job in zip(l[0::2], l[1::2]):
+        depotPaths[path] = job
+
+    if not depotPaths:
+        print "No depot path to job mappings defined"
+        exit(1)
+    else:
+        print "Depot path mappings"
+        for key in depotPaths:
+            print "   " + key + " = " + depotPaths[key]
+
     print "Application configuration:"
     print app.config
-    app.run(host=cfg['hookservice.server_host'],
-            port=cfg['hookservice.server_port'],
+    app.run(host=app.config['jrbb.server_host'],
+            port=app.config['jrbb.server_port'],
             debug=True)

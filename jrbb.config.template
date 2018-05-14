@@ -1,4 +1,4 @@
-[hookservice]
+[jrbb]
 ;
 ; the host on which the service should listen and which reviewboard will
 ; make a call to (e.g. localhost). Use 0.0.0.0 for all adapters
@@ -24,10 +24,15 @@ reviewboard_server =
 reviewboard_user =
 reviewboard_password =
 ;
-; A prefix of a file depot path which is used to filter reviews.
-; Only reviews which touch files in this area will be built
-; e.g. //depot/myproject/main/
-depot_path_prefix =
-;
-; The job in jenkins to run which does the build
-jenkins_job_name = 
+; name values pair mapping jobs to a depot path filter
+; //depot/path/to/tool MY_JENKINS_JOB
+paths_to_jobs =
+    //depot/MMA/ MMA-main-reviewbot-build-pipeline
+    //depot/TOP/ TOP-main-reviewbot-build-pipeline
+
+[jrbb_validator]
+; Where a secondary bot is being used as a pure validator, specify its
+; username here
+validator_reviewboard_user =
+; URL of the secondary validator to be invoked with the review url
+validator_url =
