@@ -84,7 +84,7 @@ def ReviewRelevant(cfg, depotPaths, reviewId):
     # Only interested in reviews addressed to the bot
     client = RBClient(cfg['jrbb.reviewboard_server'],
                       username=cfg['jrbb.reviewboard_user'],
-                      password=cfg['jrbb.reviewboard_password'])
+                      api_token=cfg['jrbb.reviewboard_apitoken'])
     root = client.get_root()
 
     reviewRequest = root.get_review_request(review_request_id=reviewId)
@@ -243,7 +243,7 @@ def main():
                 'jrbb.jenkins_apikey',
                 'jrbb.reviewboard_server',
                 'jrbb.reviewboard_user',
-                'jrbb.reviewboard_password',
+                'jrbb.reviewboard_apitoken',
                 'jrbb.paths_to_jobs',
                ]:
         if not opt in app.config:

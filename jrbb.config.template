@@ -22,7 +22,7 @@ jenkins_apikey =
 ; only reviews addressed to this user are built
 reviewboard_server =
 reviewboard_user =
-reviewboard_password =
+reviewboard_apitoken =
 ;
 ; name values pair mapping jobs to a depot path filter
 ; //depot/path/to/tool MY_JENKINS_JOB

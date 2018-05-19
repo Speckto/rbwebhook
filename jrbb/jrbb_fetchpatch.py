@@ -29,7 +29,7 @@ def main():
         client = RBClient(
             config.get('jrbb', 'reviewboard_server'),
             username=config.get('jrbb', 'reviewboard_user'),
-            password=config.get('jrbb', 'reviewboard_password'))
+            api_token=config.get('jrbb', 'reviewboard_apitoken'))
 
     except ConfigParser.NoSectionError:
         print "Configuration file " + args.cfg + " not found or missing items"
