@@ -1,14 +1,16 @@
-import jenkins
 from rbtools.api.client import RBClient
 from bottle import Bottle, route, run, post, request
 from P4 import P4, P4Exception
+from waitress import serve
+import jenkins
 import argparse
-import re
-import itertools
+import pprint
 
 app = Bottle()
 
-depotPaths = dict()
+# Maps depot paths to Jenkins jobs which build that path.
+# This is constant once initialised by main.
+gDepotPaths = dict()
 
 def ReviewCommitHasShelve(cfg, reviewCommitId):
     """
@@ -51,7 +53,18 @@ def ReviewCommitHasShelve(cfg, reviewCommitId):
         print "Review commit " + reviewCommitId + " is not a shelved change."
     return shelvedChange
 
-def GetJob(line):
+def GetJobForLine(depotPaths, line):
+    """
+    Interprets a line of a diff (patch format) looking for affected files.
+    If a file header statement has a perforce path matching one of the paths
+    relevant to a Jenkins job, returns that job.
+
+    @param depotPaths Dict mapping perforce paths to a jenkins job
+    @param line       A line from a diff to examine
+    @return "" if the line has no associated job
+            A Jenkins job name if patch line is a file header with a path
+            matching the pattern for a job
+    """
     for path in depotPaths:
         job = depotPaths[path]
         if (line.startswith("--- " + path) or
@@ -60,7 +73,7 @@ def GetJob(line):
     # None found
     return ""
 
-def ReviewRelevant(cfg, reviewId):
+def ReviewRelevant(cfg, depotPaths, reviewId):
     """
     Determines if a review is relevant to the bot. Checks if it is
     address to the bot and if the diff alters the specified depot path.
@@ -80,6 +93,7 @@ def ReviewRelevant(cfg, reviewId):
     relevantFiles = False
     reviewForBuildBot = False
     reviewForValidatorBot = False
+    # TODO: Inspect mailing lists to check if  bot is a member
     for p in reviewRequest.target_people:
         if p.title == cfg['jrbb.reviewboard_user']:
             print "Build bot is review recipient."
@@ -103,7 +117,7 @@ def ReviewRelevant(cfg, reviewId):
             patch = diff.get_patch()
 
             for line in patch.data.splitlines():
-                jobName = GetJob(line)
+                jobName = GetJobForLine(depotPaths, line)
                 if jobName != "":
                     print "Review diff contains files for " + jobName
                     relevantFiles = True
@@ -134,6 +148,7 @@ def KickJenkinsJob(cfg,
                    shelvedChange):
     """
     Kicks off a build of a jenkins job with the specified parameters
+    @return 0 on failure, 1 on success
     """
     try:
         server = jenkins.Jenkins(
@@ -142,17 +157,16 @@ def KickJenkinsJob(cfg,
             password=cfg['jrbb.jenkins_apikey'])
 
         if server.job_exists(job):
-            print 'job ' + job + ' exists. Attempting trigger...'
-            queueItemNo = server.build_job(
-                job,
-                {'REVIEW_URL': reviewUrl,
-                 'review_id': reviewId,
-                 'review_commit_id': reviewCommitId,
-                 'use_shelve': ('true' if shelvedChange else 'false')})
-            queueItem = server.get_queue_item(queueItemNo)
+            params = {'REVIEW_URL': reviewUrl,
+                      'review_id': reviewId,
+                      'review_commit_id': reviewCommitId,
+                      'use_shelve': ('true' if shelvedChange else 'false')}
+            print 'Trigger job ' + job + ' with parameters:'
+            pprint.pprint(params)
+            server.build_job(job, params)
         else:
             print 'ERROR: job does not exist in jenkins'
-            return 'ERROR: Job does not exist in jenkins'
+            return 0
 
     except (jenkins.JenkinsException,
             jenkins.NotFoundException,
@@ -160,11 +174,11 @@ def KickJenkinsJob(cfg,
             jenkins.BadHTTPException,
             jenkins.TimeoutException) as error:
         print 'Error interacting with Jenkins - error was:\n' + error
-        return 'ERROR: Failed to trigger:' + error
+        return 0
 
     else:
-        print 'OK: Job triggered'
-        return 'OK: Job triggered'
+        print 'OK: Build job triggered'
+        return 1
 
 @app.post('/post')
 def result():
@@ -174,7 +188,6 @@ def result():
     @param review_id:        The id for the review
     @param review_commit_id: The "commit id" for the review
     """
-    cfg = request.app.config
     if ('review_url' in request.forms and
         'review_id' in request.forms and
         'review_commit_id' in request.forms):
@@ -187,22 +200,25 @@ def result():
                          '    id=' + reviewId + '\n'\
                          '    cid=' + reviewCommitId
 
-        rel = ReviewRelevant(cfg,
+        rel = ReviewRelevant(request.app.config,
+                             gDepotPaths,
                              reviewId)
 
         if rel['reviewForBuildBot'] == True:
-            shelvedChange = ReviewCommitHasShelve(cfg, reviewCommitId)
+            shelvedChange = ReviewCommitHasShelve(request.app.config,
+                                                  reviewCommitId)
 
-            return KickJenkinsJob(cfg,
-                                  rel['buildBotJob'],
-                                  reviewUrl,
-                                  reviewId,
-                                  reviewCommitId,
-                                  shelvedChange)
+            KickJenkinsJob(request.app.config,
+                           rel['buildBotJob'],
+                           reviewUrl,
+                           reviewId,
+                           reviewCommitId,
+                           shelvedChange)
 
         if rel['reviewForValidatorBot'] == True:
             print "TODO: Invoke the validator bot"
 
+        return "OK"
     else:
         print 'ERROR: Missing parameter'
         return 'ERROR: Missing parameter'
@@ -237,18 +253,20 @@ def main():
     # Extract job to depot path mappings from config
     l = app.config['jrbb.paths_to_jobs'].split()
     for path, job in zip(l[0::2], l[1::2]):
-        depotPaths[path] = job
+        gDepotPaths[path] = job
 
-    if not depotPaths:
+    if not gDepotPaths:
         print "No depot path to job mappings defined"
         exit(1)
     else:
         print "Depot path mappings"
-        for key in depotPaths:
-            print "   " + key + " = " + depotPaths[key]
+        for key in gDepotPaths:
+            print "   " + key + " = " + gDepotPaths[key]
+        print ""
 
     print "Application configuration:"
-    print app.config
-    app.run(host=app.config['jrbb.server_host'],
-            port=app.config['jrbb.server_port'],
-            debug=True)
+    pprint.pprint(app.config)
+    print ""
+    serve(app,
+          host=app.config['jrbb.server_host'],
+          port=app.config['jrbb.server_port'])
