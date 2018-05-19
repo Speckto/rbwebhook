@@ -13,7 +13,7 @@ def main():
                         help="Configuration file")
     parser.add_argument("--reviewid",
                         required=True,
-                        help="review id to post to")
+                        help="Review id to post to")
     parser.add_argument("--buildurl",
                         required=True,
                         help="The jenkins build url")
