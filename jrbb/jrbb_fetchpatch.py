@@ -3,6 +3,7 @@ import argparse
 import ConfigParser
 import os
 
+
 def main():
     '''
     Fetches the latest patch diff from the review given the review id passed
@@ -41,16 +42,16 @@ def main():
     rr = root.get_review_request(review_request_id=reviewId)
     diffRevision = rr.get_latest_diff().revision
     print "Latest diff revision for review", reviewId, "is", diffRevision
-    diff = root.get_diff(review_request_id=reviewId, diff_revision=diffRevision)
+    diff = root.get_diff(review_request_id=reviewId,
+                         diff_revision=diffRevision)
     patch = diff.get_patch()
 
     print "Retrieved the following patch file"
-    print "--------------------------------------------------------------------"
+    print "-------------------------------------------------------------------"
     print patch.data
-    print "--------------------------------------------------------------------"
+    print "-------------------------------------------------------------------"
 
     outF = open(args.out, "w")
     print >>outF, patch.data
     outF.close()
     print "Patch written to " + args.out
-

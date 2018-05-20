@@ -1,6 +1,8 @@
 from rbtools.api.client import RBClient
 import argparse
-import ConfigParser, os
+import ConfigParser
+import os
+
 
 def main():
     '''
@@ -53,9 +55,7 @@ def main():
     else:
         msg = 'Opps! I could not build these changes. See ' + buildUrl
 
-    reviews.create(body_bottom=msg,
-                   public=True)
+    reviews.create(body_bottom=msg, public=True)
 
     print "Posted to review " + reviewId + " build state=" + buildState + \
-           ". Build url=" + buildUrl
-
+          ". Build url=" + buildUrl

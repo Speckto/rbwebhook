@@ -6,11 +6,13 @@ import jenkins
 import argparse
 import pprint
 
+
 app = Bottle()
 
 # Maps depot paths to Jenkins jobs which build that path.
 # This is constant once initialised by main.
 gDepotPaths = dict()
+
 
 def ReviewCommitHasShelve(cfg, reviewCommitId):
     """
@@ -53,6 +55,7 @@ def ReviewCommitHasShelve(cfg, reviewCommitId):
         print "Review commit " + reviewCommitId + " is not a shelved change."
     return shelvedChange
 
+
 def GetJobForLine(depotPaths, line):
     """
     Interprets a line of a diff (patch format) looking for affected files.
@@ -67,11 +70,11 @@ def GetJobForLine(depotPaths, line):
     """
     for path in depotPaths:
         job = depotPaths[path]
-        if (line.startswith("--- " + path) or
-            line.startswith("+++ " + path)):
+        if (line.startswith("--- " + path) or line.startswith("+++ " + path)):
             return job
     # None found
     return ""
+
 
 def ReviewRelevant(cfg, depotPaths, reviewId):
     """
@@ -103,8 +106,8 @@ def ReviewRelevant(cfg, depotPaths, reviewId):
     # Determine if either bot has been directly targeted in the review
     for p in reviewRequest.target_people:
         reviewForBuildBot = reviewForBuildBot or (p.title == buildBotName)
-        reviewForValidatorBot = reviewForValidatorBot or\
-                                    (p.title == validatorBotName)
+        reviewForValidatorBot = \
+            reviewForValidatorBot or (p.title == validatorBotName)
         if reviewForValidatorBot and reviewForBuildBot:
             break
 
@@ -120,8 +123,8 @@ def ReviewRelevant(cfg, depotPaths, reviewId):
             for u in groupUsers:
                 reviewForBuildBot = reviewForBuildBot or\
                                         u.username == buildBotName
-                reviewForValidatorBot = reviewForValidatorBot or\
-                                            u.username == validatorBotName
+                reviewForValidatorBot = \
+                    reviewForValidatorBot or u.username == validatorBotName
 
             if reviewForValidatorBot and reviewForBuildBot:
                 break
@@ -168,6 +171,7 @@ def ReviewRelevant(cfg, depotPaths, reviewId):
     print "Relevant to validator bot: " + str(ret['reviewForValidatorBot'])
     return ret
 
+
 def KickJenkinsJob(cfg,
                    job,
                    reviewUrl,
@@ -208,6 +212,7 @@ def KickJenkinsJob(cfg,
         print 'OK: Build job triggered'
         return 1
 
+
 @app.post('/post')
 def result():
     """
@@ -217,22 +222,22 @@ def result():
     @param review_commit_id: The "commit id" for the review
     """
     if ('review_url' in request.forms and
-        'review_id' in request.forms and
-        'review_commit_id' in request.forms):
+            'review_id' in request.forms and
+            'review_commit_id' in request.forms):
 
         reviewUrl = request.forms['review_url']
         reviewId = request.forms['review_id']
         reviewCommitId = request.forms['review_commit_id']
         print '>>> Received request\n'\
-                         '    url=' + reviewUrl + '\n'\
-                         '    id=' + reviewId + '\n'\
-                         '    cid=' + reviewCommitId
+              '    url=' + reviewUrl + '\n'\
+              '    id=' + reviewId + '\n'\
+              '    cid=' + reviewCommitId
 
         rel = ReviewRelevant(request.app.config,
                              gDepotPaths,
                              reviewId)
 
-        if rel['reviewForBuildBot'] == True:
+        if rel['reviewForBuildBot']:
             shelvedChange = ReviewCommitHasShelve(request.app.config,
                                                   reviewCommitId)
 
@@ -243,13 +248,14 @@ def result():
                            reviewCommitId,
                            shelvedChange)
 
-        if rel['reviewForValidatorBot'] == True:
+        if rel['reviewForValidatorBot']:
             print "TODO: Invoke the validator bot"
 
         return "OK"
     else:
         print 'ERROR: Missing parameter'
         return 'ERROR: Missing parameter'
+
 
 def main():
     parser = argparse.ArgumentParser()
@@ -274,13 +280,13 @@ def main():
                 'jrbb.reviewboard_apitoken',
                 'jrbb.paths_to_jobs',
                ]:
-        if not opt in app.config:
+        if opt not in app.config:
             print "Error: Configuration is missing option " + opt
             exit(1)
 
     # Extract job to depot path mappings from config
-    l = app.config['jrbb.paths_to_jobs'].split()
-    for path, job in zip(l[0::2], l[1::2]):
+    jobPaths = app.config['jrbb.paths_to_jobs'].split()
+    for path, job in zip(jobPaths[0::2], jobPathsl[1::2]):
         gDepotPaths[path] = job
 
     if not gDepotPaths:
