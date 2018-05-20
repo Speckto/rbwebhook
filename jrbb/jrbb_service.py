@@ -251,13 +251,18 @@ def result():
 
         if rel['reviewForValidatorBot']:
             # TODO: Test this, with the exact parameters names, etc
-            url = request.app.config['jrbb_valiator.validator_url']
+            url = request.app.config['jrbb_validator.validator_url']
             print "Invoke validator bot at: " + url
             secret = request.app.config['jrbb_validator.validator_secret']
             data = {'key': secret,
                     'reviewId': reviewId}
-            resp = requests.post(url, params=data)
-            print "Response is: code=" + resp.status_code + " Msg=" + resp.text
+            try:
+                resp = requests.post(url, params=data)
+                print "Response is: code=" +\
+                      resp.status_code + " Msg=" + resp.text
+            except requests.exceptions.RequestException as e:
+                print "Connection error: "
+                print e
 
         return "OK"
     else:
@@ -294,7 +299,7 @@ def main():
 
     # Extract job to depot path mappings from config
     jobPaths = app.config['jrbb.paths_to_jobs'].split()
-    for path, job in zip(jobPaths[0::2], jobPathsl[1::2]):
+    for path, job in zip(jobPaths[0::2], jobPaths[1::2]):
         gDepotPaths[path] = job
 
     if not gDepotPaths:
