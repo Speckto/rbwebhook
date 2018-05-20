@@ -89,20 +89,48 @@ def ReviewRelevant(cfg, depotPaths, reviewId):
 
     reviewRequest = root.get_review_request(review_request_id=reviewId)
 
+    haveValidatorBot = 'jrbb_validator.validator_reviewboard_user' in cfg
     hasDiff = False
     relevantFiles = False
     reviewForBuildBot = False
     reviewForValidatorBot = False
-    # TODO: Inspect mailing lists to check if  bot is a member
-    for p in reviewRequest.target_people:
-        if p.title == cfg['jrbb.reviewboard_user']:
-            print "Build bot is review recipient."
-            reviewForBuildBot = True
-        elif 'jrbb_validator.validator_reviewboard_user' in cfg and\
-             p.title == cfg['jrbb_validator.validator_reviewboard_user']:
-            print "Validator bot is review recipient."
-            reviewForValidatorBot = True
+    buildBotName = cfg['jrbb.reviewboard_user']
+    validatorBotName = ''
+    jobName = ''
+    if haveValidatorBot:
+        validatorBotName = cfg['jrbb_validator.validator_reviewboard_user']
 
+    # Determine if either bot has been directly targeted in the review
+    for p in reviewRequest.target_people:
+        reviewForBuildBot = reviewForBuildBot or (p.title == buildBotName)
+        reviewForValidatorBot = reviewForValidatorBot or\
+                                    (p.title == validatorBotName)
+        if reviewForValidatorBot and reviewForBuildBot:
+            break
+
+    # If either user cannot be found as a target person we have to check
+    # if they are within any of the groups
+    if (not reviewForBuildBot) or (haveValidatorBot and not
+                                   reviewForValidatorBot):
+        for tg in reviewRequest.target_groups:
+            group = tg.get()
+            # You are supposed to be able to filter users using q=name but that
+            # doesn't seem to work
+            groupUsers = group.get_review_group_users()
+            for u in groupUsers:
+                reviewForBuildBot = reviewForBuildBot or\
+                                        u.username == buildBotName
+                reviewForValidatorBot = reviewForValidatorBot or\
+                                            u.username == validatorBotName
+
+            if reviewForValidatorBot and reviewForBuildBot:
+                break
+
+    print "Review people status: for build bot=" + str(reviewForBuildBot) +\
+          ", for validator bot=" + str(reviewForValidatorBot)
+
+    # This is addressed to one of the bots, so now work out if there is a diff
+    # and if said diff is of interest
     if reviewForBuildBot or reviewForValidatorBot:
         try:
             latestDiff = reviewRequest.get_latest_diff()
