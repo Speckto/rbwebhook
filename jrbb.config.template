@@ -36,3 +36,5 @@ paths_to_jobs =
 validator_reviewboard_user =
 ; URL of the secondary validator to be invoked with the review url
 validator_url =
+; Secret to pass on the URL so the server knows it is us
+validator_secret =

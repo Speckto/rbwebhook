@@ -3,6 +3,7 @@ from bottle import Bottle, route, run, post, request
 from P4 import P4, P4Exception
 from waitress import serve
 import jenkins
+import requests
 import argparse
 import pprint
 
@@ -249,7 +250,14 @@ def result():
                            shelvedChange)
 
         if rel['reviewForValidatorBot']:
-            print "TODO: Invoke the validator bot"
+            # TODO: Test this, with the exact parameters names, etc
+            url = request.app.config['jrbb_valiator.validator_url']
+            print "Invoke validator bot at: " + url
+            secret = request.app.config['jrbb_validator.validator_secret']
+            data = {'key': secret,
+                    'reviewId': reviewId}
+            resp = requests.post(url, params=data)
+            print "Response is: code=" + resp.status_code + " Msg=" + resp.text
 
         return "OK"
     else:
