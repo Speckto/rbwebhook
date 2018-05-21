@@ -250,11 +250,10 @@ def result():
                            shelvedChange)
 
         if rel['reviewForValidatorBot']:
-            # TODO: Test this, with the exact parameters names, etc
             url = request.app.config['jrbb_validator.validator_url']
             print "Invoke validator bot at: " + url
             secret = request.app.config['jrbb_validator.validator_secret']
-            data = {'key': secret,
+            data = {'secret': secret,
                     'reviewId': reviewId}
             try:
                 resp = requests.post(url, params=data)
