@@ -254,11 +254,12 @@ def result():
             print "Invoke validator bot at: " + url
             secret = request.app.config['jrbb_validator.validator_secret']
             data = {'secret': secret,
-                    'reviewId': reviewId}
+                    'reviewId': int(reviewId)}
             try:
-                resp = requests.post(url, params=data)
-                print "Response is: code=" +\
-                      resp.status_code + " Msg=" + resp.text
+                resp = requests.post(url,
+                                     json=data)
+                print "Response is: code=" + str(resp.status_code) + \
+                      " Msg=" + resp.text
             except requests.exceptions.RequestException as e:
                 print "Connection error: "
                 print e
