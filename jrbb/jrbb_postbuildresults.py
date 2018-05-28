@@ -1,7 +1,10 @@
-from rbtools.api.client import RBClient
+"""
+Posts a message to a review
+"""
+
 import argparse
 import ConfigParser
-import os
+from rbtools.api.client import RBClient
 
 
 def main():
@@ -26,9 +29,9 @@ def main():
 
     args = parser.parse_args()
 
-    reviewId = args.reviewid
-    buildUrl = args.buildurl
-    buildState = args.buildstate
+    reviewid = args.reviewid
+    buildurl = args.buildurl
+    buildstate = args.buildstate
 
     config = ConfigParser.ConfigParser()
 
@@ -46,16 +49,18 @@ def main():
     root = client.get_root()
 
     # Get the revision number of the latest diff from the review
-    rr = root.get_review_request(review_request_id=reviewId)
 
-    reviews = rr.get_reviews()
+    # pylint: disable=no-member
+    reviewreq = root.get_review_request(review_request_id=reviewid)
 
-    if buildState == 'SUCCESS':
-        msg = 'Successfully built changes. See ' + buildUrl
+    reviews = reviewreq.get_reviews()
+
+    if buildstate == 'SUCCESS':
+        msg = 'Successfully built changes. See ' + buildurl
     else:
-        msg = 'Opps! I could not build these changes. See ' + buildUrl
+        msg = 'Opps! I could not build these changes. See ' + buildurl
 
     reviews.create(body_bottom=msg, public=True)
 
-    print "Posted to review " + reviewId + " build state=" + buildState + \
-          ". Build url=" + buildUrl
+    print "Posted to review " + reviewid + " build state=" + buildstate + \
+          ". Build url=" + buildurl

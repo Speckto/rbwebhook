@@ -1,20 +1,24 @@
-
+"""
+Jenkins Reviewboard Bot (jrbb)
+"""
 from setuptools import setup, find_packages
 
 
-with open('README.md') as f:
-    readme = f.read()
+def readfile(filename):
+    """
+    Reads and returns file contents
+    """
+    with open(filename) as docfile:
+        return docfile.read()
 
-with open('LICENSE.md') as f:
-    license = f.read()
 
 setup(
     name='jenkinsreviewbot',
     version='0.1.0',
     description='Jenkins reviewboard review bot',
-    long_description=readme,
+    long_description=readfile('README.md'),
     author='Neil.Potter',
-    license=license,
+    license=readfile('LICENSE.md'),
     include_package_data=True,
     packages=find_packages(exclude=('tests', 'docs')),
     py_modules=['jrbb.jrbb_service'],

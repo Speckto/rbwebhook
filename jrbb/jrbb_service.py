@@ -1,14 +1,23 @@
+"""
+Jenkins Reviewboard Bot (jrbb) service
+
+Receives webhook callbacks from the reviewboard server and triggers a
+jenkins-based build bot (job) and/or validator bot.
+"""
+
+# pylint: disable=invalid-name
+
+import argparse
+import pprint
+import requests
 from rbtools.api.client import RBClient
-from bottle import Bottle, route, run, post, request
+from bottle import Bottle, request
 from P4 import P4, P4Exception
 from waitress import serve
 import jenkins
-import requests
-import argparse
-import pprint
 
 
-app = Bottle()
+application = Bottle()
 
 # Maps depot paths to Jenkins jobs which build that path.
 # This is constant once initialised by main.
@@ -71,12 +80,14 @@ def GetJobForLine(depotPaths, line):
     """
     for path in depotPaths:
         job = depotPaths[path]
-        if (line.startswith("--- " + path) or line.startswith("+++ " + path)):
+        if line.startswith("--- " + path) or line.startswith("+++ " + path):
             return job
     # None found
     return ""
 
 
+# pylint: disable=too-many-arguments,too-many-branches,too-many-locals
+# pylint: disable=too-many-statements
 def ReviewRelevant(cfg, depotPaths, reviewId):
     """
     Determines if a review is relevant to the bot. Checks if it is
@@ -91,6 +102,7 @@ def ReviewRelevant(cfg, depotPaths, reviewId):
                       api_token=cfg['jrbb.reviewboard_apitoken'])
     root = client.get_root()
 
+    # pylint: disable=no-member
     reviewRequest = root.get_review_request(review_request_id=reviewId)
 
     haveValidatorBot = 'jrbb_validator.validator_reviewboard_user' in cfg
@@ -214,7 +226,7 @@ def KickJenkinsJob(cfg,
         return 1
 
 
-@app.post('/post')
+@application.post('/post')
 def result():
     """
     Handle post containing these parameters
@@ -222,10 +234,14 @@ def result():
     @param review_id:        The id for the review
     @param review_commit_id: The "commit id" for the review
     """
+
+    # Pylint does not handle request.forms well
+    # pylint: disable=unsupported-membership-test,unsubscriptable-object
     if ('review_url' in request.forms and
             'review_id' in request.forms and
             'review_commit_id' in request.forms):
 
+        appconfig = request.app.config  # pylint: disable=no-member
         reviewUrl = request.forms['review_url']
         reviewId = request.forms['review_id']
         reviewCommitId = request.forms['review_commit_id']
@@ -234,15 +250,15 @@ def result():
               '    id=' + reviewId + '\n'\
               '    cid=' + reviewCommitId
 
-        rel = ReviewRelevant(request.app.config,
+        rel = ReviewRelevant(appconfig,
                              gDepotPaths,
                              reviewId)
 
         if rel['reviewForBuildBot']:
-            shelvedChange = ReviewCommitHasShelve(request.app.config,
+            shelvedChange = ReviewCommitHasShelve(appconfig,
                                                   reviewCommitId)
 
-            KickJenkinsJob(request.app.config,
+            KickJenkinsJob(appconfig,
                            rel['buildBotJob'],
                            reviewUrl,
                            reviewId,
@@ -250,9 +266,9 @@ def result():
                            shelvedChange)
 
         if rel['reviewForValidatorBot']:
-            url = request.app.config['jrbb_validator.validator_url']
+            url = appconfig['jrbb_validator.validator_url']
             print "Invoke validator bot at: " + url
-            secret = request.app.config['jrbb_validator.validator_secret']
+            secret = appconfig['jrbb_validator.validator_secret']
             data = {'secret': secret,
                     'reviewId': int(reviewId)}
             try:
@@ -271,34 +287,38 @@ def result():
 
 
 def main():
+    """
+    Main entry point
+    """
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--cfg",
                         required=True,
                         help="Configuration file")
     args = parser.parse_args()
 
-    app.config.load_config(args.cfg)
+    application.config.load_config(args.cfg)
 
     # Mandatory parameters
     for opt in [
-                'jrbb.server_host',
-                'jrbb.server_port',
-                'jrbb.perforce_port',
-                'jrbb.perforce_user',
-                'jrbb.jenkins_server',
-                'jrbb.jenkins_user',
-                'jrbb.jenkins_apikey',
-                'jrbb.reviewboard_server',
-                'jrbb.reviewboard_user',
-                'jrbb.reviewboard_apitoken',
-                'jrbb.paths_to_jobs',
-               ]:
-        if opt not in app.config:
+            'jrbb.server_host',
+            'jrbb.server_port',
+            'jrbb.perforce_port',
+            'jrbb.perforce_user',
+            'jrbb.jenkins_server',
+            'jrbb.jenkins_user',
+            'jrbb.jenkins_apikey',
+            'jrbb.reviewboard_server',
+            'jrbb.reviewboard_user',
+            'jrbb.reviewboard_apitoken',
+            'jrbb.paths_to_jobs']:
+
+        if opt not in application.config:
             print "Error: Configuration is missing option " + opt
             exit(1)
 
     # Extract job to depot path mappings from config
-    jobPaths = app.config['jrbb.paths_to_jobs'].split()
+    jobPaths = application.config['jrbb.paths_to_jobs'].split()
     for path, job in zip(jobPaths[0::2], jobPaths[1::2]):
         gDepotPaths[path] = job
 
@@ -312,8 +332,8 @@ def main():
         print ""
 
     print "Application configuration:"
-    pprint.pprint(app.config)
+    pprint.pprint(application.config)
     print ""
-    serve(app,
-          host=app.config['jrbb.server_host'],
-          port=app.config['jrbb.server_port'])
+    serve(application,
+          host=application.config['jrbb.server_host'],
+          port=application.config['jrbb.server_port'])

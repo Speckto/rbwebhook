@@ -1,7 +1,11 @@
-from rbtools.api.client import RBClient
+"""
+Fetches a patch file file from a reviewboard review and writes specified
+output file
+"""
+
 import argparse
 import ConfigParser
-import os
+from rbtools.api.client import RBClient
 
 
 def main():
@@ -20,7 +24,7 @@ def main():
                         required=True,
                         help="Output file location (e.g. patch.diff)")
     args = parser.parse_args()
-    reviewId = args.reviewid
+    reviewid = args.reviewid
 
     config = ConfigParser.ConfigParser()
 
@@ -39,11 +43,13 @@ def main():
     root = client.get_root()
 
     # Get the revision number of the latest diff from the review
-    rr = root.get_review_request(review_request_id=reviewId)
-    diffRevision = rr.get_latest_diff().revision
-    print "Latest diff revision for review", reviewId, "is", diffRevision
-    diff = root.get_diff(review_request_id=reviewId,
-                         diff_revision=diffRevision)
+
+    # pylint: disable=no-member
+    reviewrequest = root.get_review_request(review_request_id=reviewid)
+    diffrevision = reviewrequest.get_latest_diff().revision
+    print "Latest diff revision for review", reviewid, "is", diffrevision
+    diff = root.get_diff(review_request_id=reviewid,
+                         diff_revision=diffrevision)
     patch = diff.get_patch()
 
     print "Retrieved the following patch file"
@@ -51,7 +57,7 @@ def main():
     print patch.data
     print "-------------------------------------------------------------------"
 
-    outF = open(args.out, "w")
-    print >>outF, patch.data
-    outF.close()
+    outfile = open(args.out, "w")
+    print >>outfile, patch.data
+    outfile.close()
     print "Patch written to " + args.out
