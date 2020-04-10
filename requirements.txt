@@ -9,7 +9,7 @@ p4python==2017.1.1526044
 pbr==4.0.2
 python-jenkins==1.0.0
 RBTools==0.7.10
-requests==2.18.4
+requests==2.20.0
 six==1.11.0
 tqdm==4.17.1
 urllib3==1.22
